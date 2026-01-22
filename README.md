@@ -2,12 +2,16 @@
 
 Solution complète pour la gestion de restaurant avec fiches techniques et mercuriale.
 
+![Application Screenshot](https://github.com/user-attachments/assets/135d5faf-defb-46de-82e1-4e428f8d5778)
+
 ## Fonctionnalités
 
 - 📋 **Fiches Techniques**: Créez et gérez vos recettes avec ingrédients, portions, et coûts
 - 🛒 **Mercuriale**: Gérez vos prix d'ingrédients et allergènes
 - 📦 **Inventaire**: Suivez vos stocks en temps réel
 - 💳 **Caisse**: Système de point de vente intégré
+
+![Fiches Techniques](https://github.com/user-attachments/assets/70beaa9f-38a5-4011-a485-658f25aeba40)
 
 ## Import de Données
 
@@ -86,12 +90,17 @@ Exemple de réponse pour type='mercuriale':
 
 #### Authentification JWT
 
-Le système cherche automatiquement le token JWT dans localStorage sous ces clés:
-- `accessToken`
-- `jwt_token`
-- `token`
+Le système utilise un token JWT stocké dans localStorage sous la clé `accessToken`.
 
-Le token est envoyé dans le header `Authorization: Bearer <token>` lors de l'appel à `/api/upload/commit`.
+Pour configurer l'authentification:
+```javascript
+import { setAuthToken } from './utils/auth';
+
+// Après connexion réussie
+setAuthToken('votre-jwt-token');
+```
+
+Le token est automatiquement envoyé dans le header `Authorization: Bearer <token>` lors de l'appel à `/api/upload/commit`.
 
 ## Installation
 
@@ -128,6 +137,30 @@ npm test
 - PDF.js (Extraction PDF)
 - Lucide React (Icônes)
 - Chart.js (Graphiques)
+
+## Architecture
+
+```
+src/
+├── components/
+│   ├── FichesTechniquesTab.js  # Gestion des fiches techniques
+│   ├── MercurialeTab.js         # Gestion de la mercuriale
+│   ├── ImportPreview.js         # Modal de prévisualisation d'import
+│   ├── InventaireTab.js         # Gestion des stocks
+│   └── CaisseTab.js             # Point de vente
+├── utils/
+│   ├── ficheImport.js           # Import OCR pour fiches
+│   ├── mercurialeImport.js      # Import OCR pour mercuriale
+│   └── auth.js                  # Gestion authentification JWT
+└── App.js                       # Composant principal
+```
+
+## Sécurité
+
+- ✅ CodeQL: Aucune vulnérabilité détectée
+- ✅ Validation des entrées utilisateur
+- ✅ Gestion sécurisée des tokens JWT
+- ✅ Headers CORS configurables
 
 ## License
 
