@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Edit2, Trash2 } from 'lucide-react';
 
 /**
@@ -19,6 +19,13 @@ function ImportPreview({ isOpen, onClose, onCommit, items, type, title }) {
   const [editableItems, setEditableItems] = useState(items || []);
   const [editingIndex, setEditingIndex] = useState(null);
   const [committing, setCommitting] = useState(false);
+
+  // Update editable items when items prop changes
+  useEffect(() => {
+    if (items) {
+      setEditableItems(items);
+    }
+  }, [items]);
 
   if (!isOpen) return null;
 

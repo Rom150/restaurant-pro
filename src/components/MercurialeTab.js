@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Package, Plus, Trash2, Edit2, Download, Upload, AlertCircle } from 'lucide-react';
 import { importMercuriale, validateIngredients, detectDuplicates } from '../utils/mercurialeImport';
 import ImportPreview from './ImportPreview';
+import { getAuthHeaders } from '../utils/auth';
 
 const ALLERGENES_OPTIONS = [
   'Gluten', 'Crustacés', 'Œufs', 'Poissons', 'Arachides',
@@ -153,20 +154,9 @@ function MercurialeTab({ ingredients, setIngredients }) {
     
     try {
       if (API_URL) {
-        // Get JWT token from localStorage
-        const token = localStorage.getItem('accessToken') || localStorage.getItem('jwt_token') || localStorage.getItem('token');
-        
-        const headers = {
-          'Content-Type': 'application/json',
-        };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
         const response = await fetch(`${API_URL}/api/upload/commit`, {
           method: 'POST',
-          headers,
+          headers: getAuthHeaders(),
           body: JSON.stringify({ items, type: 'mercuriale' }),
         });
 

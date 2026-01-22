@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Plus, Trash2, Edit2, Upload, Users, DollarSign, ChefHat } from 'lucide-react';
 import { importFicheTechnique, validateRecipe, detectDuplicateRecipes } from '../utils/ficheImport';
 import ImportPreview from './ImportPreview';
+import { getAuthHeaders } from '../utils/auth';
 
 function FichesTechniquesTab({ fiches, setFiches, ingredients }) {
   const [formData, setFormData] = useState({
@@ -137,20 +138,9 @@ function FichesTechniquesTab({ fiches, setFiches, ingredients }) {
     
     try {
       if (API_URL) {
-        // Get JWT token from localStorage
-        const token = localStorage.getItem('accessToken') || localStorage.getItem('jwt_token') || localStorage.getItem('token');
-        
-        const headers = {
-          'Content-Type': 'application/json',
-        };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
         const response = await fetch(`${API_URL}/api/upload/commit`, {
           method: 'POST',
-          headers,
+          headers: getAuthHeaders(),
           body: JSON.stringify({ items, type: 'fiche' }),
         });
 
