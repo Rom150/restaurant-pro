@@ -52,56 +52,25 @@ function App() {
   }, [fiches]);
 
   // Fonction pour importer les données démo
-  const importerDonneesDemo = () => {
-    const ingredientsDemo = [
-      { id: Date.now() + 1, nom: "Tomates", prix: 3.50, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 2, nom: "Courgettes", prix: 2.80, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 3, nom: "Aubergines", prix: 4.20, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 4, nom: "Poivrons rouges", prix: 5.00, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 5, nom: "Oignons", prix: 1.50, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 6, nom: "Ail", prix: 8.00, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 7, nom: "Poulet fermier", prix: 12.00, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 8, nom: "Saumon frais", prix: 22.00, unite: "kg", allergenes: ["Poissons"], photo: null },
-      { id: Date.now() + 9, nom: "Œufs bio", prix: 0.45, unite: "unité", allergenes: ["Œufs"], photo: null },
-      { id: Date.now() + 10, nom: "Crevettes", prix: 18.00, unite: "kg", allergenes: ["Crustacés"], photo: null },
-      { id: Date.now() + 11, nom: "Crème fraîche", prix: 4.50, unite: "L", allergenes: ["Lait"], photo: null },
-      { id: Date.now() + 12, nom: "Beurre", prix: 8.00, unite: "kg", allergenes: ["Lait"], photo: null },
-      { id: Date.now() + 13, nom: "Parmesan", prix: 24.00, unite: "kg", allergenes: ["Lait"], photo: null },
-      { id: Date.now() + 14, nom: "Huile d'olive", prix: 12.00, unite: "L", allergenes: [], photo: null },
-      { id: Date.now() + 15, nom: "Riz basmati", prix: 3.50, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 16, nom: "Pâtes fraîches", prix: 6.00, unite: "kg", allergenes: ["Gluten", "Œufs"], photo: null },
-      { id: Date.now() + 17, nom: "Thym", prix: 20.00, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 18, nom: "Sel", prix: 2.00, unite: "kg", allergenes: [], photo: null },
-      { id: Date.now() + 19, nom: "Poivre", prix: 25.00, unite: "kg", allergenes: [], photo: null }
-    ];
-const importDemoData = () => {
-  if (window.confirm('Importer les données de démonstration ?\n\n• 22 ingrédients\n• 2 fiches techniques')) {
-    // Vider le localStorage d'abord
-    localStorage.removeItem('restaurant-ingredients');
-    localStorage.removeItem('restaurant-fiches');
-    
-    // Importer les nouvelles données
-    setIngredients(demoIngredients);
-    setFiches(demoFiches);
-    
-    alert('✅ Données importées !');
-    
-    // Recharger pour être sûr
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
-  }
-};
-    setIngredients(ingredientsDemo);
-    alert('✅ 19 ingrédients importés ! Vous pouvez maintenant créer des fiches.');
+  const importDemoData = () => {
+    if (window.confirm('Importer les données de démonstration ?\n\n• 22 ingrédients\n• 2 fiches techniques')) {
+      // Vider le localStorage d'abord
+      localStorage.removeItem('restaurant-ingredients');
+      localStorage.removeItem('restaurant-fiches');
+      
+      // Importer les nouvelles données
+      setIngredients(demoIngredients);
+      setFiches(demoFiches);
+      
+      alert('✅ Données importées !');
+      
+      // Recharger pour être sûr
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
   };
-const importDemoData = () => {
-  if (window.confirm('Importer les données de démonstration ?')) {
-    setIngredients(demoIngredients);
-    setFiches(demoFiches);
-    alert('✅ Données importées !');
-  }
-};
+
   return (
     <div className="app">
       {/* En-tête */}
@@ -125,46 +94,17 @@ const importDemoData = () => {
               <span className="stat-number">{fiches.length}</span>
               <span className="stat-label">Fiches</span>
             </div>
-            {ingredients.length === 0 && (
-              <button 
-                onClick={importerDonneesDemo}
-                style={{
-                  background: 'white',
-                  color: '#f97316',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                📦 Importer données démo
-              </button>
-            )}
           </div>
+          
+          {/* NOUVEAU BOUTON ICI */}
+          <button 
+            className="btn-secondary"
+            onClick={importDemoData}
+            style={{ marginLeft: '16px' }}
+          >
+            📦 Importer données démo
+          </button>
         </div>
-        <div className="header-right">
-  <div className="header-stats">
-    <div className="stat-item">
-      <span className="stat-value">{ingredients.length}</span>
-      <span className="stat-label">Ingrédients</span>
-    </div>
-    <div className="stat-item">
-      <span className="stat-value">{fiches.length}</span>
-      <span className="stat-label">Fiches</span>
-    </div>
-  </div>
-  
-  {/* NOUVEAU BOUTON ICI */}
-  <button 
-    className="btn-secondary"
-    onClick={importDemoData}
-    style={{ marginLeft: '16px' }}
-  >
-    📦 Importer données démo
-  </button>
-</div>
       </header>
 
       {/* Navigation */}

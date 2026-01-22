@@ -251,7 +251,7 @@ const parseIngredientLine = (line) => {
   // Pattern : "Quantité Unité Nom"
   // Ex: "250 g farine", "2 L lait", "3 oeufs"
   
-  const pattern1 = /^([\d]+(?:[,\.]\d+)?)\s*(g|kg|l|ml|cl|piece|pièce|unité|unite|c\.?\s*à\s*s|c\.?\s*à\s*c|cs|cc)?\s+(.+)$/i;
+  const pattern1 = /^([\d]+(?:[,.]?\d+)?)\s*(g|kg|l|ml|cl|piece|pièce|unité|unite|c\.?\s*à\s*s|c\.?\s*à\s*c|cs|cc)?\s+(.+)$/i;
   const match1 = line.match(pattern1);
   
   if (match1) {
@@ -265,7 +265,7 @@ const parseIngredientLine = (line) => {
   
   // Pattern 2 : "Nom Quantité Unité"
   // Ex: "Farine 250 g", "Lait 2 L"
-  const pattern2 = /^(.+?)\s+([\d]+(?:[,\.]\d+)?)\s*(g|kg|l|ml|cl|piece|pièce|unité|unite)$/i;
+  const pattern2 = /^(.+?)\s+([\d]+(?:[,.]?\d+)?)\s*(g|kg|l|ml|cl|piece|pièce|unité|unite)$/i;
   const match2 = line.match(pattern2);
   
   if (match2) {

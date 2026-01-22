@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Package, AlertTriangle, TrendingDown, Plus, History, ShoppingCart, Download } from 'lucide-react';
+import { Plus, History, ShoppingCart, Download } from 'lucide-react';
 
 const InventaireTab = ({ ingredients, setIngredients, fiches }) => {
   const [showEntreeModal, setShowEntreeModal] = useState(false);
@@ -203,6 +203,7 @@ const InventaireTab = ({ ingredients, setIngredients, fiches }) => {
     if (needsInit) {
       initialiserStocks();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
