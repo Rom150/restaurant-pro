@@ -230,7 +230,7 @@ const parseLine = (line) => {
   // Ex: "METRO ... Huile d'olive 3 L 12,50 € 37,50 €"
   if (line.match(/metro|cash|carry|facture|client|restaurant|date|avenue/i)) {
     // Chercher le pattern produit dans la ligne
-    const productMatch = line.match(/([A-ZÀ-Ÿ][a-zà-ÿ\s']+(?:\d+%)?)\s+([\d]+(?:[,\.]\d+)?)\s*(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,\.][\d]{1,2})\s*€/i);
+    const productMatch = line.match(/([A-ZÀ-Ÿ][a-zà-ÿ\s']+(?:\d+%)?)\s+([\d]+(?:[,.]?\d+)?)\s*(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,.][\d]{1,2})\s*€/i);
     if (productMatch) {
       // Reconstruire une ligne propre
       const [, nom, qte, unite, prix] = productMatch;
@@ -247,7 +247,7 @@ const parseLine = (line) => {
   
   // PATTERN 1 : Avec quantité ET total (facture complète)
   // "Tomate 5 kg 1,20 € 6,00 €" → ignore le total à la fin
-  const withTotal = line.match(/^(.+?)\s+([\d]+(?:[,\.]\d+)?)\s*(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,\.][\d]{1,2})\s*€?\s+[\d,\.]+\s*€?\s*$/i);
+  const withTotal = line.match(/^(.+?)\s+([\d]+(?:[,.]?\d+)?)\s*(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,.][\d]{1,2})\s*€?\s+[\d,.]+\s*€?\s*$/i);
   
   if (withTotal) {
     const [, nom, qte, unite, prix] = withTotal;
@@ -266,7 +266,7 @@ const parseLine = (line) => {
   
   // PATTERN 2 : Avec quantité SANS total
   // "Tomate 5 kg 1,20 €"
-  const withQty = line.match(/^(.+?)\s+([\d]+(?:[,\.]\d+)?)\s*(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,\.][\d]{1,2})\s*€?\s*$/i);
+  const withQty = line.match(/^(.+?)\s+([\d]+(?:[,.]?\d+)?)\s*(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,.][\d]{1,2})\s*€?\s*$/i);
   
   if (withQty) {
     const [, nom, qte, unite, prix] = withQty;
@@ -285,7 +285,7 @@ const parseLine = (line) => {
   
   // PATTERN 3 : Sans quantité (mercuriale simple)
   // "Farine T55 kg 0,85 €"
-  const noQty = line.match(/^(.+?)\s+(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,\.][\d]{1,2})\s*€?\s*$/i);
+  const noQty = line.match(/^(.+?)\s+(kg|l|g|ml|cl|pièce|piece|unité|unite|botte|douzaine)\s+([\d]+[,.][\d]{1,2})\s*€?\s*$/i);
   
   if (noQty) {
     const [, nom, unite, prix] = noQty;

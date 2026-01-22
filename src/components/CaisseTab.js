@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, AlertCircle, CheckCircle, DollarSign, TrendingUp } from 'lucide-react';
+import { ShoppingBag, AlertCircle, CheckCircle } from 'lucide-react';
 
 const CaisseTab = ({ fiches, ingredients, setIngredients }) => {
   const [ventes, setVentes] = useState([]);
