@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Plus, Trash2, Edit2, Upload, Users, DollarSign, ChefHat } from 'lucide-react';
 import { importFicheTechnique, validateRecipe, detectDuplicateRecipes } from '../utils/ficheImport';
+import ImportPreview from './ImportPreview';
 
 function FichesTechniquesTab({ fiches, setFiches, ingredients }) {
   const [formData, setFormData] = useState({
@@ -19,6 +20,8 @@ function FichesTechniquesTab({ fiches, setFiches, ingredients }) {
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ message: '', percent: 0 });
   const [ingredientInput, setIngredientInput] = useState({ nom: '', quantite: '', unite: 'kg' });
+  const [previewData, setPreviewData] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const CATEGORIES = ['Entrée', 'Plat', 'Dessert', 'Accompagnement', 'Sauce'];
   const UNITES = ['kg', 'g', 'L', 'ml', 'cl', 'pièce', 'unité', 'c.à.s', 'c.à.c'];
@@ -39,53 +42,83 @@ function FichesTechniquesTab({ fiches, setFiches, ingredients }) {
     setImporting(true);
 
     try {
-      const recipe = await importFicheTechnique(file, (message, percent) => {
-        setImportProgress({ message, percent });
-      });
-
-      // Validation
-      const validation = validateRecipe(recipe);
-      if (!validation.isValid) {
-        alert('❌ Erreurs détectées:\n' + validation.errors.join('\n'));
-        setImporting(false);
-        return;
-      }
-
-      // Détection doublons
-      const duplicates = detectDuplicateRecipes(fiches, recipe);
-      if (duplicates.length > 0) {
-        const dup = duplicates[0];
-        const confirm = window.confirm(
-          `⚠️ Une recette similaire existe déjà:\n\n` +
-          `"${dup.existing.nom}" (${dup.similarity}% de similarité)\n\n` +
-          `Voulez-vous quand même ajouter "${recipe.nom}" ?`
-        );
+      const API_URL = process.env.REACT_APP_API_URL;
+      
+      // Use backend API if configured, otherwise fallback to client-side OCR
+      if (API_URL) {
+        // Backend processing
+        setImportProgress({ message: 'Envoi au serveur...', percent: 0.1 });
         
-        if (!confirm) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'fiche');
+
+        const response = await fetch(`${API_URL}/api/upload/parse`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur serveur: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setImportProgress({ message: 'Analyse terminée', percent: 1.0 });
+        
+        // Show preview modal
+        setPreviewData(Array.isArray(data) ? data : [data]);
+        setShowPreview(true);
+        
+      } else {
+        // Client-side OCR processing (existing behavior)
+        const recipe = await importFicheTechnique(file, (message, percent) => {
+          setImportProgress({ message, percent });
+        });
+
+        // Validation
+        const validation = validateRecipe(recipe);
+        if (!validation.isValid) {
+          alert('❌ Erreurs détectées:\n' + validation.errors.join('\n'));
           setImporting(false);
           return;
         }
-      }
 
-      // Confirmation
-      const confirmMsg = 
-        `✅ Recette détectée:\n\n` +
-        `📝 Nom: ${recipe.nom}\n` +
-        `👥 Portions: ${recipe.portions}\n` +
-        `🥘 Ingrédients: ${recipe.ingredients.length}\n\n` +
-        `Ajouter cette fiche technique ?`;
+        // Détection doublons
+        const duplicates = detectDuplicateRecipes(fiches, recipe);
+        if (duplicates.length > 0) {
+          const dup = duplicates[0];
+          const confirm = window.confirm(
+            `⚠️ Une recette similaire existe déjà:\n\n` +
+            `"${dup.existing.nom}" (${dup.similarity}% de similarité)\n\n` +
+            `Voulez-vous quand même ajouter "${recipe.nom}" ?`
+          );
+          
+          if (!confirm) {
+            setImporting(false);
+            return;
+          }
+        }
 
-      if (window.confirm(confirmMsg)) {
-        const newFiche = {
-          ...recipe,
-          id: Date.now(),
-          photo: null,
-          date: new Date().toISOString()
-        };
+        // Confirmation
+        const confirmMsg = 
+          `✅ Recette détectée:\n\n` +
+          `📝 Nom: ${recipe.nom}\n` +
+          `👥 Portions: ${recipe.portions}\n` +
+          `🥘 Ingrédients: ${recipe.ingredients.length}\n\n` +
+          `Ajouter cette fiche technique ?`;
 
-        setFiches([...fiches, newFiche]);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
+        if (window.confirm(confirmMsg)) {
+          const newFiche = {
+            ...recipe,
+            id: Date.now(),
+            photo: null,
+            date: new Date().toISOString()
+          };
+
+          setFiches([...fiches, newFiche]);
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
+        }
       }
 
     } catch (error) {
@@ -95,6 +128,63 @@ function FichesTechniquesTab({ fiches, setFiches, ingredients }) {
       setImporting(false);
       setImportProgress({ message: '', percent: 0 });
       e.target.value = null;
+    }
+  };
+
+  // Handle commit from preview modal
+  const handlePreviewCommit = async (items) => {
+    const API_URL = process.env.REACT_APP_API_URL;
+    
+    try {
+      if (API_URL) {
+        // Get JWT token from localStorage
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('jwt_token') || localStorage.getItem('token');
+        
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_URL}/api/upload/commit`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ items, type: 'fiche' }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur serveur: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Commit result:', result);
+      }
+
+      // Add items to local state
+      const newFiches = items.map((item, index) => ({
+        ...item,
+        id: Date.now() + index,
+        photo: null,
+        date: new Date().toISOString(),
+        ingredients: item.ingredients || [],
+        instructions: item.instructions || '',
+        cout: item.cout || 0,
+        prixVente: item.prixVente || 0,
+        categorie: item.categorie || 'Plat',
+        portions: item.portions || 4,
+      }));
+
+      setFiches([...fiches, ...newFiches]);
+      setShowPreview(false);
+      setPreviewData(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+
+    } catch (error) {
+      console.error('Erreur commit:', error);
+      throw error;
     }
   };
 
@@ -219,6 +309,19 @@ function FichesTechniquesTab({ fiches, setFiches, ingredients }) {
 
   return (
     <div className="fiches-container">
+      {/* Import Preview Modal */}
+      <ImportPreview
+        isOpen={showPreview}
+        onClose={() => {
+          setShowPreview(false);
+          setPreviewData(null);
+        }}
+        onCommit={handlePreviewCommit}
+        items={previewData}
+        type="fiche"
+        title="Aperçu de l'import - Fiches Techniques"
+      />
+
       {/* HEADER */}
       <div className="fiches-header">
         <div className="header-title">

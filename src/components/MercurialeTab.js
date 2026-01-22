@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Package, Plus, Trash2, Edit2, Download, Upload, AlertCircle } from 'lucide-react';
 import { importMercuriale, validateIngredients, detectDuplicates } from '../utils/mercurialeImport';
+import ImportPreview from './ImportPreview';
 
 const ALLERGENES_OPTIONS = [
   'Gluten', 'Crustacés', 'Œufs', 'Poissons', 'Arachides',
@@ -23,6 +24,8 @@ function MercurialeTab({ ingredients, setIngredients }) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ message: '', percent: 0 });
+  const [previewData, setPreviewData] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // ========================================
   // IMPORT OCR DE FICHIER (PDF, Image)
@@ -40,68 +43,98 @@ function MercurialeTab({ ingredients, setIngredients }) {
     setImporting(true);
     
     try {
-      const extractedIngredients = await importMercuriale(file, (message, percent) => {
-        setImportProgress({ message, percent });
-      });
+      const API_URL = process.env.REACT_APP_API_URL;
 
-      const validIngredients = validateIngredients(extractedIngredients);
-      
-      if (validIngredients.length === 0) {
-        alert('❌ Aucun ingrédient valide détecté dans le fichier');
-        setImporting(false);
-        return;
-      }
-
-      const { duplicates, toAdd } = detectDuplicates(ingredients, validIngredients);
-
-      if (duplicates.length > 0) {
-        let message = `🔍 ${duplicates.length} ingrédient(s) déjà présent(s) :\n\n`;
+      // Use backend API if configured, otherwise fallback to client-side OCR
+      if (API_URL) {
+        // Backend processing
+        setImportProgress({ message: 'Envoi au serveur...', percent: 0.1 });
         
-        duplicates.forEach(dup => {
-          const emoji = parseFloat(dup.percentChange) > 0 ? '📈' : '📉';
-          message += `${emoji} ${dup.existing.nom}\n`;
-          message += `   Actuel: ${dup.existing.prix}€/${dup.existing.unite}\n`;
-          message += `   Nouveau: ${dup.new.prix}€/${dup.new.unite}\n`;
-          message += `   Variation: ${dup.percentChange}%\n\n`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'mercuriale');
+
+        const response = await fetch(`${API_URL}/api/upload/parse`, {
+          method: 'POST',
+          body: formData,
         });
 
-        message += `\nVoulez-vous mettre à jour les prix ?`;
+        if (!response.ok) {
+          throw new Error(`Erreur serveur: ${response.statusText}`);
+        }
 
-        if (window.confirm(message)) {
-          const updatedIngredients = ingredients.map(ing => {
-            const dup = duplicates.find(d => d.existing.id === ing.id);
-            if (dup) {
-              return { ...ing, prix: dup.new.prix, allergenes: dup.new.allergenes };
-            }
-            return ing;
+        const data = await response.json();
+        setImportProgress({ message: 'Analyse terminée', percent: 1.0 });
+        
+        // Show preview modal
+        setPreviewData(Array.isArray(data) ? data : [data]);
+        setShowPreview(true);
+        
+      } else {
+        // Client-side OCR processing (existing behavior)
+        const extractedIngredients = await importMercuriale(file, (message, percent) => {
+          setImportProgress({ message, percent });
+        });
+
+        const validIngredients = validateIngredients(extractedIngredients);
+        
+        if (validIngredients.length === 0) {
+          alert('❌ Aucun ingrédient valide détecté dans le fichier');
+          setImporting(false);
+          return;
+        }
+
+        const { duplicates, toAdd } = detectDuplicates(ingredients, validIngredients);
+
+        if (duplicates.length > 0) {
+          let message = `🔍 ${duplicates.length} ingrédient(s) déjà présent(s) :\n\n`;
+          
+          duplicates.forEach(dup => {
+            const emoji = parseFloat(dup.percentChange) > 0 ? '📈' : '📉';
+            message += `${emoji} ${dup.existing.nom}\n`;
+            message += `   Actuel: ${dup.existing.prix}€/${dup.existing.unite}\n`;
+            message += `   Nouveau: ${dup.new.prix}€/${dup.new.unite}\n`;
+            message += `   Variation: ${dup.percentChange}%\n\n`;
           });
-          setIngredients(updatedIngredients);
+
+          message += `\nVoulez-vous mettre à jour les prix ?`;
+
+          if (window.confirm(message)) {
+            const updatedIngredients = ingredients.map(ing => {
+              const dup = duplicates.find(d => d.existing.id === ing.id);
+              if (dup) {
+                return { ...ing, prix: dup.new.prix, allergenes: dup.new.allergenes };
+              }
+              return ing;
+            });
+            setIngredients(updatedIngredients);
+          }
         }
-      }
 
-      if (toAdd.length > 0) {
-        const confirmMsg = `✅ ${toAdd.length} nouvel(aux) ingrédient(s) détecté(s) :\n\n${
-          toAdd.slice(0, 5).map(ing => `• ${ing.nom} - ${ing.prix}€/${ing.unite}${ing.quantite > 0 ? ` (Qté: ${ing.quantite})` : ''}`).join('\n')
-        }${toAdd.length > 5 ? `\n... et ${toAdd.length - 5} autres` : ''}\n\nAjouter à la mercuriale ?`;
+        if (toAdd.length > 0) {
+          const confirmMsg = `✅ ${toAdd.length} nouvel(aux) ingrédient(s) détecté(s) :\n\n${
+            toAdd.slice(0, 5).map(ing => `• ${ing.nom} - ${ing.prix}€/${ing.unite}${ing.quantite > 0 ? ` (Qté: ${ing.quantite})` : ''}`).join('\n')
+          }${toAdd.length > 5 ? `\n... et ${toAdd.length - 5} autres` : ''}\n\nAjouter à la mercuriale ?`;
 
-        if (window.confirm(confirmMsg)) {
-          const newIngredients = toAdd.map((ing, index) => ({
-            ...ing,
-            id: Date.now() + index,
-            photo: null,
-            stockActuel: ing.quantite || 0,  // ✅ Utiliser la quantité importée
-            stockMin: 10,
-            stockCritique: 5,
-            stockMax: Math.max(50, (ing.quantite || 0) * 2),  // Stock max = 2x la quantité importée
-            mouvements: []
-          }));
+          if (window.confirm(confirmMsg)) {
+            const newIngredients = toAdd.map((ing, index) => ({
+              ...ing,
+              id: Date.now() + index,
+              photo: null,
+              stockActuel: ing.quantite || 0,  // ✅ Utiliser la quantité importée
+              stockMin: 10,
+              stockCritique: 5,
+              stockMax: Math.max(50, (ing.quantite || 0) * 2),  // Stock max = 2x la quantité importée
+              mouvements: []
+            }));
 
-          setIngredients([...ingredients, ...newIngredients]);
-          setShowSuccess(true);
-          setTimeout(() => setShowSuccess(false), 3000);
+            setIngredients([...ingredients, ...newIngredients]);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+          }
+        } else if (duplicates.length === 0) {
+          alert('ℹ️ Tous les ingrédients sont déjà dans la mercuriale');
         }
-      } else if (duplicates.length === 0) {
-        alert('ℹ️ Tous les ingrédients sont déjà dans la mercuriale');
       }
 
     } catch (error) {
@@ -111,6 +144,62 @@ function MercurialeTab({ ingredients, setIngredients }) {
       setImporting(false);
       setImportProgress({ message: '', percent: 0 });
       e.target.value = null;
+    }
+  };
+
+  // Handle commit from preview modal
+  const handlePreviewCommit = async (items) => {
+    const API_URL = process.env.REACT_APP_API_URL;
+    
+    try {
+      if (API_URL) {
+        // Get JWT token from localStorage
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('jwt_token') || localStorage.getItem('token');
+        
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_URL}/api/upload/commit`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ items, type: 'mercuriale' }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur serveur: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Commit result:', result);
+      }
+
+      // Add items to local state
+      const newIngredients = items.map((item, index) => ({
+        ...item,
+        id: Date.now() + index,
+        photo: null,
+        stockActuel: item.quantite || 0,
+        stockMin: 10,
+        stockCritique: 5,
+        stockMax: Math.max(50, (item.quantite || 0) * 2),
+        mouvements: [],
+        allergenes: item.allergenes || []
+      }));
+
+      setIngredients([...ingredients, ...newIngredients]);
+      setShowPreview(false);
+      setPreviewData(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+
+    } catch (error) {
+      console.error('Erreur commit:', error);
+      throw error;
     }
   };
 
@@ -250,6 +339,19 @@ function MercurialeTab({ ingredients, setIngredients }) {
 
   return (
     <div className="mercuriale-container">
+      {/* Import Preview Modal */}
+      <ImportPreview
+        isOpen={showPreview}
+        onClose={() => {
+          setShowPreview(false);
+          setPreviewData(null);
+        }}
+        onCommit={handlePreviewCommit}
+        items={previewData}
+        type="mercuriale"
+        title="Aperçu de l'import - Mercuriale"
+      />
+
       {/* HEADER */}
       <div className="mercuriale-header">
         <div className="header-title">
